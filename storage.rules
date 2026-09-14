@@ -1,0 +1,13 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Selfies and generated composites are written/read only by Cloud
+    // Functions via the Admin SDK. The tablet and the QR "view" page never
+    // talk to Storage directly — they go through short-lived signed URLs
+    // handed out by callable functions.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

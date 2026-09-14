@@ -1,0 +1,20 @@
+{
+  "projects": {
+    "default": "skifin-ccpro"
+  },
+  "targets": {
+    "skifin-ccpro": {
+      "hosting": {
+        "nalco-photo-booth": [
+          "nalco-photo-booth"
+        ]
+      },
+      "storage": {
+        "nalco-photo-booth": [
+          "skifin-ccpro-nalco-photo-booth"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

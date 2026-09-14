@@ -1,0 +1,55 @@
+import { initializeApp } from "firebase/app";
+import { isSupported, getAnalytics } from "firebase/analytics";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+// Web app config from the "nalco-photo-booth" app registered inside the
+// existing skifin-ccpro Firebase project. This app talks only to Cloud
+// Functions (callable) — it never touches Firestore/Storage directly.
+const firebaseConfig = {
+  apiKey: "AIzaSyDQBL7TWPuSNxvWQJ4yOBnvhkDKMVVjnHo",
+  authDomain: "skifin-ccpro.firebaseapp.com",
+  projectId: "skifin-ccpro",
+  storageBucket: "skifin-ccpro.firebasestorage.app",
+  messagingSenderId: "114792777692",
+  appId: "1:114792777692:web:b3689adea6b33b4702f119",
+  measurementId: "G-V7H4E3QZ2C",
+};
+
+export const app = initializeApp(firebaseConfig);
+
+// Analytics isn't supported in every environment (e.g. some in-app browsers
+// used to scan the QR code) — only initialize it when it's safe to.
+isSupported()
+  .then((supported) => {
+    if (supported) getAnalytics(app);
+  })
+  .catch(() => {
+    /* analytics is best-effort only */
+  });
+
+// Must match the region set in functions/src/index.ts (setGlobalOptions).
+const functions = getFunctions(app, "asia-south1");
+
+export interface GeneratePhotoRequest {
+  selfieBase64: string;
+  mimeType: string;
+  sceneId: string;
+}
+export interface GeneratePhotoResponse {
+  sessionId: string;
+  imageUrl: string;
+  expiresAt: number;
+}
+export const generatePhoto = httpsCallable<GeneratePhotoRequest, GeneratePhotoResponse>(
+  functions,
+  "generatePhoto"
+);
+
+export interface GetResultResponse {
+  imageUrl: string;
+  expiresAt: number;
+}
+export const getResult = httpsCallable<{ sessionId: string }, GetResultResponse>(
+  functions,
+  "getResult"
+);

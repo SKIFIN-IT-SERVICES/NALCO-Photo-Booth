@@ -1,0 +1,43 @@
+{
+  "hosting": {
+    "target": "nalco-photo-booth",
+    "public": "web/dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|svg|png|jpg|jpeg|webp)",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      },
+      {
+        "source": "index.html",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      }
+    ]
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "nalco-photo-booth",
+      "ignore": ["node_modules", ".git", "*.log", "*.local"]
+    }
+  ],
+  "firestore": [
+    {
+      "database": "nalco-photo-booth",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    }
+  ],
+  "storage": [
+    {
+      "bucket": "skifin-ccpro-nalco-photo-booth",
+      "rules": "storage.rules"
+    }
+  ]
+}
