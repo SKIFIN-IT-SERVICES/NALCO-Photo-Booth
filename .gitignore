@@ -2,6 +2,7 @@ node_modules/
 dist/
 lib/
 .firebase/
+*.tsbuildinfo
 firebase-debug.log
 firebase-debug.*.log
 .DS_Store

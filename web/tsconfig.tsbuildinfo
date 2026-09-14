@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/firebase.ts","./src/main.tsx","./src/data/scenes.ts","./src/screens/capture.tsx","./src/screens/confirm.tsx","./src/screens/errorscreen.tsx","./src/screens/generating.tsx","./src/screens/result.tsx","./src/screens/scenepicker.tsx","./src/screens/viewer.tsx","./src/screens/welcome.tsx","./src/state/boothcontext.tsx"],"version":"5.9.3"}
