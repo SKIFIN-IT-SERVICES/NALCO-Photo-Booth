@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Scene } from "./scenes";
+import { resolveAspectRatio, resolveQuality, type AspectRatioId, type QualityId } from "./format";
 
 const BASE_PROMPT =
   "You are given two images. The first is a photo of a person. The second " +
@@ -11,9 +12,11 @@ const BASE_PROMPT =
   "signage and lighting exactly as shown; do not invent a different " +
   "location. Match the lighting, shadows, grain, and color grading of the " +
   "second image so the result looks like a single real photograph taken " +
-  "on-site, not a cutout or collage. Frame as a waist-up portrait, subject " +
-  "slightly off-center, looking toward the camera with a natural, " +
-  "confident expression.\n\n";
+  "on-site, not a cutout or collage. Reframe the composition to fill the " +
+  "requested aspect ratio naturally (e.g. show more of the scene for a " +
+  "wide frame, a tighter crop for a tall one) rather than adding blank " +
+  "space or letterboxing. Subject slightly off-center, looking toward the " +
+  "camera with a natural, confident expression.\n\n";
 
 function loadReferenceImage(filename: string): { data: string; mimeType: string } {
   const path = join(__dirname, "..", "assets", "scenes", filename);
@@ -38,7 +41,9 @@ interface GeminiResponse {
 export async function generateComposite(
   selfieBase64: string,
   selfieMimeType: string,
-  scene: Scene
+  scene: Scene,
+  aspectRatioId: AspectRatioId,
+  qualityId: QualityId
 ): Promise<GeneratedImage> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -47,16 +52,21 @@ export async function generateComposite(
     );
   }
 
-  // Nano Banana Pro (gemini-3-pro-image-preview) is used instead of the
-  // cheaper Flash model specifically because it supports the imageConfig
-  // resolution control below — Flash tops out around 1300x768 regardless
-  // of prompt. The @google/generative-ai SDK doesn't yet type this field,
-  // so this calls the REST API directly.
-  const modelName = process.env.GEMINI_MODEL || "gemini-3-pro-image-preview";
-  const imageSize = process.env.GEMINI_IMAGE_SIZE || "4K";
+  // The quality tier the visitor picked decides which model actually runs:
+  // Standard -> the fast/cheap Flash model (no resolution control, stays
+  // near its native ~1300px-class output). HD/2K/4K -> Nano Banana Pro
+  // (gemini-3-pro-image-preview), the only model that supports the
+  // imageConfig.imageSize control. See functions/src/format.ts for the
+  // mapping. The @google/generative-ai SDK doesn't yet type these
+  // imageConfig fields, so this calls the REST API directly.
+  const { model: modelName, imageSize } = resolveQuality(qualityId);
+  const aspectRatio = resolveAspectRatio(aspectRatioId);
 
   const reference = loadReferenceImage(scene.referenceImage);
   const prompt = BASE_PROMPT + "Scene-specific direction: " + scene.promptDetail;
+
+  const imageConfig: Record<string, string> = { aspectRatio };
+  if (imageSize) imageConfig.imageSize = imageSize;
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
@@ -73,7 +83,7 @@ export async function generateComposite(
             ],
           },
         ],
-        generationConfig: { imageConfig: { imageSize } },
+        generationConfig: { imageConfig },
       }),
     }
   );

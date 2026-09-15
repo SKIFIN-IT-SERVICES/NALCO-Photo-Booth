@@ -4,6 +4,7 @@ import Welcome from "./screens/Welcome";
 import Capture from "./screens/Capture";
 import Confirm from "./screens/Confirm";
 import ScenePicker from "./screens/ScenePicker";
+import FormatPicker from "./screens/FormatPicker";
 import Generating from "./screens/Generating";
 import Result from "./screens/Result";
 import ErrorScreen from "./screens/ErrorScreen";
@@ -18,6 +19,7 @@ function Booth() {
       {step === "capture" && <Capture />}
       {step === "confirm" && <Confirm />}
       {step === "scene" && <ScenePicker />}
+      {step === "format" && <FormatPicker />}
       {step === "generating" && <Generating />}
       {step === "result" && <Result />}
       {step === "error" && <ErrorScreen />}

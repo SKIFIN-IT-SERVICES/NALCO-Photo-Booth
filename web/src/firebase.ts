@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { isSupported, getAnalytics } from "firebase/analytics";
 import { getFunctions, httpsCallable } from "firebase/functions";
+import type { AspectRatioId, QualityId } from "./data/format";
 
 // Web app config from the "nalco-photo-booth" app registered inside the
 // existing skifin-ccpro Firebase project. This app talks only to Cloud
@@ -34,6 +35,8 @@ export interface GeneratePhotoRequest {
   selfieBase64: string;
   mimeType: string;
   sceneId: string;
+  aspectRatio: AspectRatioId;
+  quality: QualityId;
 }
 export interface GeneratePhotoResponse {
   sessionId: string;

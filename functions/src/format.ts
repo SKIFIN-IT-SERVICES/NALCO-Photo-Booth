@@ -1,0 +1,36 @@
+export type AspectRatioId = "square" | "portrait" | "landscape";
+export type QualityId = "standard" | "hd" | "2k" | "4k";
+
+// Must mirror web/src/data/format.ts (ids and the ratio values Gemini
+// accepts for generationConfig.imageConfig.aspectRatio).
+const ASPECT_RATIOS: Record<AspectRatioId, string> = {
+  square: "1:1",
+  portrait: "4:5",
+  landscape: "16:9",
+};
+
+// Standard uses the fast/cheap Flash model, which ignores imageSize and
+// stays at its native ~1300px-class output. HD/2K/4K need the Pro model —
+// it's the only one that supports resolution control at all.
+const QUALITY_CONFIG: Record<QualityId, { model: string; imageSize: string | null }> = {
+  standard: { model: "gemini-3.1-flash-image-preview", imageSize: null },
+  hd: { model: "gemini-3-pro-image-preview", imageSize: "1K" },
+  "2k": { model: "gemini-3-pro-image-preview", imageSize: "2K" },
+  "4k": { model: "gemini-3-pro-image-preview", imageSize: "4K" },
+};
+
+export function isAspectRatioId(value: unknown): value is AspectRatioId {
+  return typeof value === "string" && value in ASPECT_RATIOS;
+}
+
+export function isQualityId(value: unknown): value is QualityId {
+  return typeof value === "string" && value in QUALITY_CONFIG;
+}
+
+export function resolveAspectRatio(id: AspectRatioId): string {
+  return ASPECT_RATIOS[id];
+}
+
+export function resolveQuality(id: QualityId): { model: string; imageSize: string | null } {
+  return QUALITY_CONFIG[id];
+}

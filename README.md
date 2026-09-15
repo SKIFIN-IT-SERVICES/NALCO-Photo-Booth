@@ -4,10 +4,10 @@
 
 Standalone tablet app implementing [ai-photo-booth-tablet-plan.md](./ai-photo-booth-tablet-plan.md).
 This is **v1 scope**: capture → pick one of 9 real NALCO site scenes →
-Gemini composite (4K, Nano Banana Pro) → result screen with a QR code that
-opens a mobile "save your photo" page. WhatsApp/email/print delivery are
-intentionally deferred (see "Not built yet" below) — nothing about the plan
-is lost, just sequenced.
+pick a format (aspect ratio + quality tier) → Gemini composite → result
+screen with a QR code that opens a mobile "save your photo" page.
+WhatsApp/email delivery are intentionally deferred (see "Not built yet"
+below) — nothing about the plan is lost, just sequenced.
 
 ## Why this doesn't touch your existing Firebase project
 
@@ -176,30 +176,43 @@ both `scenes.ts` files, then redeploy both functions and hosting.
 - **PPE/safety-compliance auto-check on generated images** — open decision
   in plan §12, not implemented.
 
-## Image quality / resolution
+## Format picker (aspect ratio + quality → automatic model switch)
 
-Backend uses `gemini-3-pro-image-preview` ("Nano Banana Pro") with
-`generationConfig.imageConfig.imageSize: "4K"` (set via `GEMINI_MODEL` /
-`GEMINI_IMAGE_SIZE` in `functions/.env`) — confirmed output around
-5400×3072px, several MB per photo. This is deliberately the Pro tier, not
-the cheaper `gemini-3.1-flash-image-preview` from the original plan: Flash
-tops out around 1300×768 regardless of prompt, which looked visibly soft
-full-screen on a tablet. The `@google/generative-ai` SDK doesn't yet type
-the `imageConfig` field, so `functions/src/gemini.ts` calls the REST API
-directly instead of going through the SDK.
+Between the scene picker and generation, visitors hit a **Format** screen
+([web/src/screens/FormatPicker.tsx](./web/src/screens/FormatPicker.tsx)) to
+choose:
 
-Trade-offs of the Pro/4K switch:
-- **Slower**: ~30–60s per generation (vs a few seconds for Flash) — the
-  Generating screen copy and the callable's timeouts (`functions/src/index.ts`,
-  `web/src/firebase.ts`) were both raised to accommodate this.
-- **Pricier**: roughly 2–3x Flash's per-image cost (see below).
-- Drop to `GEMINI_MODEL=gemini-3.1-flash-image-preview` in `functions/.env`
-  and redeploy functions if you'd rather trade quality back for speed/cost.
+- **Shape**: Square (1:1, for social posts), Portrait (4:5), Landscape
+  (16:9) — sent as `generationConfig.imageConfig.aspectRatio`, confirmed
+  both models respect it (tested Flash at 9:16 → real 768×1376 output; Pro
+  at 1:1 + 2K → real 2048×2048 output).
+- **Quality**: Standard, HD, 2K, 4K — this choice **picks the model**, not
+  just a parameter:
+  - Standard → `gemini-3.1-flash-image-preview` (fast, ~10-20s, cheapest;
+    ignores resolution requests and stays near its native ~1300px-class
+    output regardless of what's asked)
+  - HD/2K/4K → `gemini-3-pro-image-preview` ("Nano Banana Pro", ~20-60s) at
+    `imageConfig.imageSize` 1K/2K/4K respectively — confirmed 4K output is
+    genuinely ~5400×3072px, several MB per photo
+
+The mapping lives in `functions/src/format.ts` (backend) and
+`web/src/data/format.ts` (frontend) — kept as separate small files rather
+than hardcoded inline so the tier list/defaults are easy to change later.
+The `@google/generative-ai` SDK doesn't yet type the `imageConfig` field,
+so `functions/src/gemini.ts` calls the REST API directly instead of going
+through the SDK.
+
+Because quality is now chosen per-request, `functions/.env` no longer pins
+a fixed `GEMINI_MODEL`/`GEMINI_IMAGE_SIZE` — only `GEMINI_API_KEY` and
+`SESSION_TTL_HOURS` remain.
 
 ## Cost
 
-The plan's original table (§10) assumed Flash at ~$0.067/generation. Running
-Nano Banana Pro at 4K costs more per image — budget roughly 2–3x that
+The plan's original table (§10) assumed Flash at ~$0.067/generation.
+Standard tier tracks that; HD/2K/4K run Nano Banana Pro instead, which
+costs more per image — budget roughly 2–3x for HD/2K and more for 4K
 (check current pricing at ai.studio, since preview-model pricing can move).
-WhatsApp/email/print/printer consumables are still separate, budgeted once
-those phases start.
+Since quality is now a per-visitor choice, actual monthly cost depends on
+how the tiers get used — worth watching for the first week or two on-site.
+WhatsApp/email/print consumables are still separate, budgeted once those
+phases start.

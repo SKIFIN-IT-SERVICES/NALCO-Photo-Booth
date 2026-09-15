@@ -7,6 +7,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import { nanoid } from "nanoid";
 import { getScene } from "./scenes";
 import { generateComposite } from "./gemini";
+import { isAspectRatioId, isQualityId, type AspectRatioId, type QualityId } from "./format";
 
 initializeApp();
 setGlobalOptions({ region: "asia-south1", maxInstances: 10 });
@@ -25,6 +26,8 @@ interface GeneratePhotoRequest {
   selfieBase64: string;
   mimeType: string;
   sceneId: string;
+  aspectRatio: AspectRatioId;
+  quality: QualityId;
 }
 
 interface GeneratePhotoResponse {
@@ -57,6 +60,13 @@ export const generatePhoto = onCall(
       throw new HttpsError("invalid-argument", `Unknown sceneId: ${data.sceneId}`);
     }
 
+    if (!isAspectRatioId(data.aspectRatio)) {
+      throw new HttpsError("invalid-argument", `Unknown aspectRatio: ${data.aspectRatio}`);
+    }
+    if (!isQualityId(data.quality)) {
+      throw new HttpsError("invalid-argument", `Unknown quality: ${data.quality}`);
+    }
+
     if (!/^image\/(jpeg|png|webp)$/.test(data.mimeType)) {
       throw new HttpsError("invalid-argument", "Selfie must be JPEG, PNG or WebP.");
     }
@@ -71,10 +81,22 @@ export const generatePhoto = onCall(
     // One retry on transient generation failure, per the plan's error-handling rule.
     let result;
     try {
-      result = await generateComposite(data.selfieBase64, data.mimeType, scene);
+      result = await generateComposite(
+        data.selfieBase64,
+        data.mimeType,
+        scene,
+        data.aspectRatio,
+        data.quality
+      );
     } catch (firstErr) {
       try {
-        result = await generateComposite(data.selfieBase64, data.mimeType, scene);
+        result = await generateComposite(
+          data.selfieBase64,
+          data.mimeType,
+          scene,
+          data.aspectRatio,
+          data.quality
+        );
       } catch (secondErr) {
         console.error("Gemini generation failed twice", { sessionId, firstErr, secondErr });
         throw new HttpsError("internal", "Photo generation failed. Please try again.");
@@ -95,6 +117,8 @@ export const generatePhoto = onCall(
 
     await db.collection("sessions").doc(sessionId).set({
       sceneId: scene.id,
+      aspectRatio: data.aspectRatio,
+      quality: data.quality,
       resultPath: filePath,
       contentType: result.mimeType,
       createdAt: Timestamp.fromMillis(now),
