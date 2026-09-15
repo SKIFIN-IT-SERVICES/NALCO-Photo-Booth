@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getResult } from "../firebase";
+import { InstagramIcon, WhatsAppIcon, XIcon, FacebookIcon, ThreadsIcon } from "../components/SocialIcons";
 
 type ViewerState =
   | { status: "loading" }
@@ -15,12 +16,15 @@ async function fetchAsFile(imageUrl: string): Promise<File> {
   return new File([blob], "nalco-photo-booth.jpg", { type: blob.type || "image/jpeg" });
 }
 
+type Platform = "instagram" | "whatsapp" | "x" | "facebook" | "threads";
+
 export default function Viewer() {
   const { sessionId } = useParams();
   const [state, setState] = useState<ViewerState>({ status: "loading" });
-  const [sharing, setSharing] = useState(false);
-  const [shareHint, setShareHint] = useState<string | null>(null);
+  const [busy, setBusy] = useState<Platform | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
   const canShareFiles = typeof navigator !== "undefined" && "share" in navigator;
+  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
 
   useEffect(() => {
     if (!sessionId) {
@@ -37,31 +41,44 @@ export default function Viewer() {
       );
   }, [sessionId]);
 
-  async function handleShare(imageUrl: string) {
-    setShareHint(null);
-    setSharing(true);
+  // Instagram and WhatsApp only accept the actual photo through the OS
+  // share sheet — there's no web link either platform accepts an image
+  // through directly, so this is the real path into either app with the
+  // photo attached (the user picks the app from the sheet that opens).
+  async function shareFile(platform: Platform, imageUrl: string) {
+    setHint(null);
+    setBusy(platform);
     try {
       const file = await fetchAsFile(imageUrl);
       const shareData = { files: [file], title: "NALCO Photo Booth", text: CAPTION };
       if (navigator.canShare?.(shareData)) {
         await navigator.share(shareData);
       } else {
-        setShareHint("Your browser can't attach the photo directly — save it first, then share from your gallery or the app of your choice.");
+        setHint("Your browser can't attach the photo directly — save it first, then open the app and share it from there.");
       }
     } catch (err) {
       if ((err as Error)?.name !== "AbortError") {
-        setShareHint("Couldn't open the share sheet — save the photo instead and share it from your gallery.");
+        setHint("Couldn't open the share sheet — save the photo instead and share it from your gallery.");
       }
     } finally {
-      setSharing(false);
+      setBusy(null);
     }
   }
 
-  function openIntent(url: string) {
+  // X, Facebook, and Threads publish an official web "compose" link that
+  // opens their own app directly on a phone (when installed) — but only
+  // with a caption + link, since none of them accept an image file through
+  // a plain URL.
+  function openComposeLink(platform: Platform, url: string) {
+    setHint(
+      platform === "x"
+        ? "Opens X with a caption + link ready — attach the photo yourself if you'd like it in the post."
+        : platform === "facebook"
+          ? "Opens Facebook with the link ready to share."
+          : "Opens Threads with a caption + link ready — attach the photo yourself if you'd like it in the post."
+    );
     window.open(url, "_blank", "noopener,noreferrer");
   }
-
-  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-nalco-navy p-6 text-center">
@@ -88,53 +105,77 @@ export default function Viewer() {
             Save Photo
           </a>
 
-          {canShareFiles && (
-            <button
-              onClick={() => handleShare(state.imageUrl)}
-              disabled={sharing}
-              className="rounded-full bg-white/20 px-10 py-4 text-lg font-medium text-white disabled:opacity-50"
-            >
-              {sharing ? "Opening share sheet…" : "Share Photo (Instagram, WhatsApp…)"}
-            </button>
-          )}
-
-          <div className="flex flex-wrap justify-center gap-3">
-            <button
-              onClick={() =>
-                openIntent(
-                  `https://twitter.com/intent/tweet?text=${encodeURIComponent(CAPTION)}&url=${encodeURIComponent(pageUrl)}`
-                )
-              }
-              className="rounded-full bg-white/10 px-5 py-2 text-sm font-medium text-white"
-            >
-              Post to X
-            </button>
-            <button
-              onClick={() =>
-                openIntent(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`)
-              }
-              className="rounded-full bg-white/10 px-5 py-2 text-sm font-medium text-white"
-            >
-              Post to Facebook
-            </button>
-            <button
-              onClick={() =>
-                openIntent(
-                  `https://www.threads.net/intent/post?text=${encodeURIComponent(CAPTION + " " + pageUrl)}`
-                )
-              }
-              className="rounded-full bg-white/10 px-5 py-2 text-sm font-medium text-white"
-            >
-              Post to Threads
-            </button>
+          <div>
+            <p className="mb-3 text-sm text-white/60">Post it straight to:</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              {canShareFiles && (
+                <button
+                  onClick={() => shareFile("instagram", state.imageUrl)}
+                  disabled={busy !== null}
+                  aria-label="Share to Instagram"
+                  className="flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg disabled:opacity-50"
+                  style={{ background: "linear-gradient(45deg,#f58529,#dd2a7b,#8134af,#515bd4)" }}
+                >
+                  {busy === "instagram" ? <Spinner /> : <InstagramIcon />}
+                </button>
+              )}
+              {canShareFiles && (
+                <button
+                  onClick={() => shareFile("whatsapp", state.imageUrl)}
+                  disabled={busy !== null}
+                  aria-label="Share to WhatsApp"
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg disabled:opacity-50"
+                >
+                  {busy === "whatsapp" ? <Spinner /> : <WhatsAppIcon />}
+                </button>
+              )}
+              <button
+                onClick={() =>
+                  openComposeLink(
+                    "x",
+                    `https://twitter.com/intent/tweet?text=${encodeURIComponent(CAPTION)}&url=${encodeURIComponent(pageUrl)}`
+                  )
+                }
+                aria-label="Post to X"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg"
+              >
+                <XIcon />
+              </button>
+              <button
+                onClick={() =>
+                  openComposeLink(
+                    "facebook",
+                    `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`
+                  )
+                }
+                aria-label="Post to Facebook"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1877F2] text-white shadow-lg"
+              >
+                <FacebookIcon />
+              </button>
+              <button
+                onClick={() =>
+                  openComposeLink(
+                    "threads",
+                    `https://www.threads.net/intent/post?text=${encodeURIComponent(CAPTION + " " + pageUrl)}`
+                  )
+                }
+                aria-label="Post to Threads"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg"
+              >
+                <ThreadsIcon />
+              </button>
+            </div>
           </div>
-          <p className="max-w-xs text-[11px] text-white/40">
-            X / Facebook / Threads share this page's link — for Instagram, use
-            "Share Photo" above (Instagram doesn't support posting from a web
-            link).
-          </p>
 
-          {shareHint && <p className="max-w-xs text-xs text-nalco-amber">{shareHint}</p>}
+          {hint && <p className="max-w-xs text-xs text-nalco-amber">{hint}</p>}
+
+          <p className="max-w-xs text-[11px] text-white/40">
+            Instagram & WhatsApp open with your photo attached. X, Facebook &
+            Threads open with a link (no platform accepts an image file
+            through a web link). YouTube isn't offered — it only accepts
+            video uploads.
+          </p>
 
           <p className="max-w-xs text-xs text-white/40">
             This link expires shortly for your privacy — save the photo now.
@@ -143,4 +184,8 @@ export default function Viewer() {
       )}
     </div>
   );
+}
+
+function Spinner() {
+  return <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />;
 }
