@@ -22,8 +22,16 @@ const ASPECT_RATIOS: Record<AspectRatioId, string> = {
 };
 
 // Standard uses the fast/cheap Flash model, which ignores imageSize and
-// stays at its native ~1300px-class output. HD/2K/4K need the Pro model —
-// it's the only one that supports resolution control at all.
+// stays at its native ~1MP output. HD/2K/4K need the Pro model — it's the
+// only one that supports resolution control at all.
+//
+// Note: HD ("1K") and Standard land at roughly the same ~1MP pixel count —
+// Flash's fixed native output happens to match Pro's smallest imageSize
+// tier. Gemini only exposes 1K/2K/4K as size buckets, so that overlap is a
+// real ceiling of the API, not something this mapping can route around.
+// The two are still meaningfully different: HD runs the Pro model, which
+// produces visibly better detail/lighting/prompt-adherence than Flash at
+// the same pixel count — it's a quality difference, not a resolution one.
 const QUALITY_CONFIG: Record<QualityId, { model: string; imageSize: string | null }> = {
   standard: { model: "gemini-3.1-flash-image-preview", imageSize: null },
   hd: { model: "gemini-3-pro-image-preview", imageSize: "1K" },

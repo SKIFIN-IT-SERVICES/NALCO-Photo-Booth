@@ -19,10 +19,12 @@ export interface AspectRatioOption {
   /**
    * Approximate output pixel dimensions at each quality tier for this
    * ratio. "standard"/"hd" are real measured Gemini output (confirmed via
-   * direct API probes); "2k"/"4k" are calculated from the confirmed 1K→2K→4K
-   * doubling pattern (verified on the square ratio: 1024²→2048²→4096²) — an
-   * individual generation may land a little off these, same as the
-   * standard/hd figures already vary slightly run to run.
+   * direct API probes) — note they land at nearly the same pixel count,
+   * since Flash's fixed native output happens to match Pro's smallest
+   * imageSize tier (1K); HD's real advantage there is Pro's better
+   * detail/lighting/prompt-adherence, not more pixels. "2k"/"4k" are
+   * calculated from the confirmed 1K→2K→4K doubling pattern (verified on
+   * the square ratio: 1024²→2048²→4096²).
    */
   dimensions: Record<QualityId, string>;
 }
@@ -94,10 +96,14 @@ export interface QualityOption {
 
 // Standard routes to the fast/cheap Flash model; HD/2K/4K route to the
 // Pro model (only one that supports resolution control) at that size —
-// see functions/src/gemini.ts for where this mapping actually happens.
+// see functions/src/format.ts for where this mapping actually happens.
+// Standard and HD land at nearly the same pixel count (see the note on
+// `dimensions` above) — HD's value over Standard is Pro's better detail
+// and prompt-adherence at that size, not more pixels; 2K is the first
+// tier with a visibly larger image.
 export const QUALITIES: QualityOption[] = [
   { id: "standard", label: "Standard", description: "Fastest, ~10-20s" },
-  { id: "hd", label: "HD", description: "Sharper, ~20-60s" },
-  { id: "2k", label: "2K", description: "High detail, ~20-60s" },
+  { id: "hd", label: "HD", description: "Sharper detail, ~20-60s" },
+  { id: "2k", label: "2K", description: "Visibly larger image, ~20-60s" },
   { id: "4k", label: "4K", description: "Best quality, ~20-60s" },
 ];
