@@ -146,15 +146,33 @@ both `scenes.ts` files, then redeploy both functions and hosting.
 - Add an on-screen consent notice on the Welcome/Capture screen before you
   go live (plan §9) — not yet implemented as a blocking UI step.
 
+## Session flow, print, and social sharing
+
+- The Result screen (tablet) no longer auto-resets — the session stays on
+  screen until the operator/visitor taps **Close Session**. There's also a
+  **Print Photo** button that calls the browser's print dialog against
+  whatever printer is set as the tablet's OS default (USB or network) — no
+  vendor SDK, so it works with any already-configured printer. If you get a
+  dedicated photo-booth printer (DNP/Mitsubishi dye-sub, etc.) later, that
+  needs its own vendor integration in place of `window.print()`.
+- The mobile "view" page (opened via QR code) has a **Share Photo** button
+  using the Web Share API with the actual image file attached — on a phone
+  this opens the native share sheet with every installed app (Instagram,
+  WhatsApp, Facebook, Threads, X, etc.) as a target. Below it are direct
+  **Post to X / Facebook / Threads** links — these only share the page link
+  + caption (not the raw file), since none of those platforms accept an
+  image attachment via a plain web URL.
+- **YouTube is intentionally not included** — it's video-only, there's no
+  way to post a still photo to it from a link or share sheet.
+
 ## Not built yet (see plan §12 "Open Decisions")
 
 - **WhatsApp Business API delivery** — currently the QR code opens a save
   page instead; wiring the Business Cloud API is a distinct integration
   that needs Meta credentials you haven't set up yet.
 - **Email delivery** — same idea, needs a transactional email provider key.
-- **Print integration** — needs the actual printer make/model decided first.
-- **Kiosk/guided-access lockdown, idle timers beyond the result screen,
-  on-screen consent notice** — plan §11 Phase 4 hardening.
+- **Kiosk/guided-access lockdown, on-screen consent notice** — plan §11
+  Phase 4 hardening.
 - **PPE/safety-compliance auto-check on generated images** — open decision
   in plan §12, not implemented.
 

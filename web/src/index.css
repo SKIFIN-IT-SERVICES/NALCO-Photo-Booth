@@ -16,3 +16,20 @@ body {
   background: #0b2545;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-photo,
+  #printable-photo * {
+    visibility: visible;
+  }
+  #printable-photo {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: 100%;
+    height: auto;
+  }
+}
