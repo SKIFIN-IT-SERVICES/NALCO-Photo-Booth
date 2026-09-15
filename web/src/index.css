@@ -18,6 +18,9 @@ body {
 }
 
 @media print {
+  @page {
+    margin: 0;
+  }
   body * {
     visibility: hidden;
   }
@@ -28,8 +31,11 @@ body {
   #printable-photo {
     position: fixed;
     inset: 0;
-    margin: auto;
-    width: 100%;
-    height: auto;
+    width: 100vw;
+    height: 100vh;
+    /* Fit inside the page without ever stretching/cropping the photo's
+       real aspect ratio — some print drivers otherwise force-fill the
+       page and distort it. */
+    object-fit: contain;
   }
 }

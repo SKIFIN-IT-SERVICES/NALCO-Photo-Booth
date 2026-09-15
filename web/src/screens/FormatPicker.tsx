@@ -8,35 +8,36 @@ export default function FormatPicker() {
   const [quality, setQuality] = useState<QualityId>("hd");
 
   return (
-    <div className="flex h-full w-full flex-col items-center gap-8 bg-nalco-navy p-10">
+    <div className="flex h-full w-full flex-col items-center gap-6 overflow-y-auto bg-nalco-navy p-8">
       <h2 className="text-3xl font-semibold text-white">Choose Your Format</h2>
 
-      <div className="w-full max-w-2xl">
-        <p className="mb-4 text-center text-lg text-white/70">Shape</p>
-        <div className="flex justify-center gap-6">
+      <div className="w-full max-w-4xl">
+        <p className="mb-3 text-center text-lg text-white/70">Shape</p>
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
           {ASPECT_RATIOS.map((opt) => (
             <button
               key={opt.id}
               onClick={() => setAspectRatio(opt.id)}
-              className={`flex flex-col items-center gap-3 rounded-2xl border-2 p-4 transition ${
+              className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-3 transition ${
                 aspectRatio === opt.id
                   ? "border-nalco-orange bg-white/10"
                   : "border-white/10 bg-white/5"
               }`}
             >
               <div
-                className="w-20 rounded-md border-2 border-white/40 bg-white/20"
+                className="w-12 rounded-md border-2 border-white/40 bg-white/20"
                 style={{ aspectRatio: opt.previewRatio }}
               />
-              <span className="text-base font-semibold text-white">{opt.label}</span>
-              <span className="text-xs text-white/50">{opt.description}</span>
+              <span className="text-sm font-semibold text-white">{opt.label}</span>
+              <span className="text-[11px] text-white/50">{opt.ratio}</span>
+              <span className="text-[11px] text-white/40">{opt.dimensions[quality]}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div className="w-full max-w-2xl">
-        <p className="mb-4 text-center text-lg text-white/70">Quality</p>
+        <p className="mb-3 text-center text-lg text-white/70">Quality</p>
         <div className="flex flex-wrap justify-center gap-4">
           {QUALITIES.map((opt) => (
             <button
@@ -53,7 +54,7 @@ export default function FormatPicker() {
         </div>
       </div>
 
-      <div className="mt-auto flex gap-6">
+      <div className="mt-auto flex gap-6 pt-2">
         <button
           onClick={() => goTo("scene")}
           className="rounded-full bg-white/20 px-10 py-4 text-lg text-white"

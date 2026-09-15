@@ -3,8 +3,9 @@ import QRCode from "qrcode";
 import { useBooth } from "../state/BoothContext";
 
 export default function Result() {
-  const { sessionId, resultUrl, reset } = useBooth();
+  const { sessionId, resultUrl, quality, reset } = useBooth();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const lowResForPrint = quality === "standard";
 
   useEffect(() => {
     if (!sessionId) return;
@@ -44,6 +45,14 @@ export default function Result() {
           Close Session
         </button>
       </div>
+
+      {lowResForPrint && (
+        <p className="max-w-xs text-center text-xs text-nalco-amber">
+          This photo was generated at Standard quality — it may look soft
+          printed at full page size. Pick 2K or 4K next time for sharper
+          prints.
+        </p>
+      )}
     </div>
   );
 }

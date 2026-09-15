@@ -1,12 +1,24 @@
-export type AspectRatioId = "square" | "portrait" | "landscape";
+export type AspectRatioId =
+  | "square"
+  | "portrait"
+  | "story"
+  | "landscape"
+  | "classic"
+  | "classicPortrait"
+  | "photo";
 export type QualityId = "standard" | "hd" | "2k" | "4k";
 
 // Must mirror web/src/data/format.ts (ids and the ratio values Gemini
-// accepts for generationConfig.imageConfig.aspectRatio).
+// accepts for generationConfig.imageConfig.aspectRatio) — all 7 confirmed
+// accepted via direct API probes.
 const ASPECT_RATIOS: Record<AspectRatioId, string> = {
   square: "1:1",
   portrait: "4:5",
+  story: "9:16",
   landscape: "16:9",
+  classic: "4:3",
+  classicPortrait: "3:4",
+  photo: "3:2",
 };
 
 // Standard uses the fast/cheap Flash model, which ignores imageSize and
