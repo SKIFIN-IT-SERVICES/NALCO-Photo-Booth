@@ -12,137 +12,97 @@ export interface Scene {
   promptDetail: string;
 }
 
+// All reference photos here are real NALCO photography scraped from the
+// official homepage carousel (nalcoindia.com) — not AI-generated.
 export const SCENES: Scene[] = [
   {
-    id: "mine-sunset-panorama",
-    name: "Mine at Sunset",
-    referenceImage: "mine-sunset-panorama.jpg",
+    id: "port-terminal",
+    name: "Port Terminal",
+    referenceImage: "port-terminal.jpg",
     promptDetail:
-      "Place the subject standing in the foreground of this open-pit mine " +
-      "at sunset, facing the camera with the terraced pit and equipment " +
-      "behind them. Full PPE: helmet, high-visibility vest. Match the warm " +
-      "golden-hour light and long shadows already in the photo.",
+      "Place the subject standing in the foreground of this port/shipping " +
+      "terminal, facing the camera with the cranes and cargo ships behind " +
+      "them. Helmet and high-visibility vest. Match the hazy, overcast " +
+      "daylight already in the photo.",
   },
   {
-    id: "heavy-equipment-yard",
-    name: "Heavy Equipment Yard",
-    referenceImage: "heavy-equipment-yard.jpg",
+    id: "mine-access-road",
+    name: "Mine Access Road",
+    referenceImage: "mine-access-road.jpg",
     promptDetail:
-      "Place the subject standing near the excavator and drill rig in this " +
-      "equipment yard, one hand resting confidently on the nearby " +
-      "machinery. Helmet, high-visibility vest and gloves. Match the " +
-      "overcast, even daylight already in the photo.",
+      "Place the subject standing on this red-earth mine access road, " +
+      "facing the camera with the tree line and safety signage behind " +
+      "them. Helmet and high-visibility vest. Match the warm, saturated " +
+      "daylight already in the photo.",
   },
   {
-    id: "control-room",
-    name: "Control Room",
-    referenceImage: "control-room.jpg",
+    id: "refinery-mountains",
+    name: "Refinery View",
+    referenceImage: "refinery-mountains.jpg",
     promptDetail:
-      "Place the subject standing near the control console in this plant " +
-      "control room, facing the camera with the wall of monitoring screens " +
-      "behind them. Smart-casual attire, no helmet needed indoors. Match " +
-      "the cool blue-toned indoor lighting already in the photo.",
-  },
-  {
-    id: "safety-station",
-    name: "Safety Station",
-    referenceImage: "safety-station.jpg",
-    promptDetail:
-      "Place the subject standing beside the safety signage and PPE rack " +
-      "in this photo, wearing a helmet and high-visibility vest as if " +
-      "just having geared up. Match the bright outdoor daylight already " +
-      "in the photo.",
-  },
-  {
-    id: "haul-road-dusk",
-    name: "Haul Road at Dusk",
-    referenceImage: "haul-road-dusk.jpg",
-    promptDetail:
-      "Place the subject standing in the foreground on this mine haul " +
-      "road at dusk, with the dusty terraced pit and hauling trucks " +
-      "behind them. Full PPE: helmet, high-visibility vest. Match the " +
-      "dusty, warm dusk lighting already in the photo.",
-  },
-  {
-    id: "mining-convoy",
-    name: "Mining Convoy",
-    referenceImage: "mining-convoy.jpg",
-    promptDetail:
-      "Place the subject standing in the foreground with the convoy of " +
-      "mining trucks working the terraced roads behind them. Full PPE: " +
-      "helmet, high-visibility vest. Match the dusty, warm evening " +
-      "lighting already in the photo.",
-  },
-  {
-    id: "smelter-floor",
-    name: "Smelter Floor",
-    referenceImage: "smelter-floor.jpg",
-    promptDetail:
-      "Place the subject standing in the aisle of this smelter hall, " +
-      "facing the camera with the glowing furnace troughs on either side. " +
-      "Full PPE: helmet, high-visibility vest, safety glasses. Match the " +
-      "warm industrial lighting and glow already in the photo.",
-  },
-  {
-    id: "refinery-control-center",
-    name: "Refinery Control Center",
-    referenceImage: "refinery-control-center.jpg",
-    promptDetail:
-      "Place the subject standing near the console in this refinery " +
-      "control center, facing the camera with the curved wall of process " +
-      "screens behind them. Smart-casual attire, no helmet needed indoors. " +
-      "Match the cool blue-toned indoor lighting already in the photo.",
-  },
-  {
-    id: "bauxite-mine-gate",
-    name: "Bauxite Mine Gate",
-    referenceImage: "bauxite-mine-gate.jpg",
-    promptDetail:
-      "Place the subject standing in the foreground of this open-pit " +
-      "bauxite mine, with the site entrance signage and terraced pit " +
-      "behind them. Full PPE: helmet, high-visibility vest. Match the " +
-      "warm sunset lighting already in the photo.",
-  },
-  {
-    id: "safety-briefing-yard",
-    name: "Safety Briefing Yard",
-    referenceImage: "safety-briefing-yard.jpg",
-    promptDetail:
-      "Place the subject standing near the safety hazard board and " +
-      "benches in this briefing yard, as if part of a toolbox talk. " +
-      "Helmet and high-visibility vest. Match the bright daylight already " +
-      "in the photo.",
-  },
-  {
-    id: "tools-and-gear",
-    name: "Tools & Gear",
-    referenceImage: "tools-and-gear.jpg",
-    promptDetail:
-      "Place the subject standing among the mining tools and equipment " +
-      "crates in this photo, one hand resting on the nearby gear. Helmet " +
-      "and high-visibility vest. Match the clean, neutral studio-style " +
-      "lighting already in the photo.",
-  },
-  {
-    id: "damanjodi-aerial",
-    name: "Damanjodi Aerial View",
-    referenceImage: "damanjodi-aerial.jpg",
-    promptDetail:
-      "Place the subject standing in the foreground with the vast open " +
-      "mine and refinery stretching out behind them to the horizon. Full " +
-      "PPE: helmet, high-visibility vest. Match the dramatic dusk lighting " +
+      "Place the subject standing in the foreground with the refinery " +
+      "and its chimneys spread out behind them against the mountains. " +
+      "Helmet and high-visibility vest. Match the soft, hazy daylight " +
       "already in the photo.",
   },
   {
-    id: "pot-line-hall",
-    name: "Pot Line Hall",
-    referenceImage: "pot-line-hall.jpg",
+    id: "corporate-hq",
+    name: "Corporate HQ",
+    referenceImage: "corporate-hq.jpg",
     promptDetail:
-      "Place the subject standing in the aisle of this aluminium pot line " +
-      "hall, facing the camera with the rows of machinery and safety " +
-      "signage behind them. Full PPE: helmet, high-visibility vest, " +
-      "safety glasses. Match the warm industrial lighting already in the " +
+      "Place the subject standing on the lawn in front of this corporate " +
+      "headquarters building, facing the camera. Smart-casual attire, no " +
+      "PPE needed here. Match the bright, clear daylight already in the " +
       "photo.",
+  },
+  {
+    id: "refinery-aerial",
+    name: "Refinery Aerial",
+    referenceImage: "refinery-aerial.jpg",
+    promptDetail:
+      "Place the subject standing in the foreground with the sprawling " +
+      "refinery complex and its chimneys behind them. Helmet and " +
+      "high-visibility vest. Match the warm, clear daylight already in " +
+      "the photo.",
+  },
+  {
+    id: "ingot-warehouse",
+    name: "Ingot Warehouse",
+    referenceImage: "ingot-warehouse.jpg",
+    promptDetail:
+      "Place the subject standing near the stacked aluminium ingots in " +
+      "this warehouse, facing the camera. Helmet and high-visibility " +
+      "vest. Match the industrial indoor lighting already in the photo.",
+  },
+  {
+    id: "power-plant",
+    name: "Power Plant",
+    referenceImage: "power-plant.jpg",
+    promptDetail:
+      "Place the subject standing in the foreground with the power " +
+      "plant's tall chimneys behind them. Helmet and high-visibility " +
+      "vest. Match the bright daylight and dramatic clouds already in " +
+      "the photo.",
+  },
+  {
+    id: "mining-fleet",
+    name: "Mining Fleet",
+    referenceImage: "mining-fleet.jpg",
+    promptDetail:
+      "Place the subject standing in the foreground of this open mine " +
+      "site, facing the camera with the fleet of dump trucks and " +
+      "excavator working behind them. Helmet and high-visibility vest. " +
+      "Match the warm, red-toned daylight already in the photo.",
+  },
+  {
+    id: "wind-farm",
+    name: "Wind Farm",
+    referenceImage: "wind-farm.jpg",
+    promptDetail:
+      "Place the subject standing in the foreground on the hillside with " +
+      "the wind turbines behind them. Smart-casual attire or a light " +
+      "high-visibility vest. Match the clear blue-sky daylight already " +
+      "in the photo.",
   },
 ];
 

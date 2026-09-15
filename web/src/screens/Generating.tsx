@@ -34,7 +34,7 @@ export default function Generating() {
     <div className="flex h-full w-full flex-col items-center justify-center gap-8 bg-nalco-navy">
       <div className="h-20 w-20 animate-spin rounded-full border-8 border-white/20 border-t-nalco-orange" />
       <p className="text-2xl font-medium text-white">Creating your photo…</p>
-      <p className="text-white/60">This usually takes about 10 seconds</p>
+      <p className="text-white/60">This can take up to a minute — worth the wait for the detail</p>
     </div>
   );
 }

@@ -3,10 +3,11 @@
 **Live:** https://nalco-photo-booth.web.app
 
 Standalone tablet app implementing [ai-photo-booth-tablet-plan.md](./ai-photo-booth-tablet-plan.md).
-This is **v1 scope**: capture → pick one of 13 real NALCO site scenes →
-Gemini composite → result screen with a QR code that opens a mobile "save
-your photo" page. WhatsApp/email/print delivery are intentionally deferred
-(see "Not built yet" below) — nothing about the plan is lost, just sequenced.
+This is **v1 scope**: capture → pick one of 9 real NALCO site scenes →
+Gemini composite (4K, Nano Banana Pro) → result screen with a QR code that
+opens a mobile "save your photo" page. WhatsApp/email/print delivery are
+intentionally deferred (see "Not built yet" below) — nothing about the plan
+is lost, just sequenced.
 
 ## Why this doesn't touch your existing Firebase project
 
@@ -107,10 +108,14 @@ Windows tablets) — see "Not built yet" for what's still needed there.
 
 ## Scenes
 
-Ships with **13 real NALCO site photos** as scenes: Mine at Sunset, Heavy
-Equipment Yard, Control Room, Safety Station, Haul Road at Dusk, Mining
-Convoy, Smelter Floor, Refinery Control Center, Bauxite Mine Gate, Safety
-Briefing Yard, Tools & Gear, Damanjodi Aerial View, Pot Line Hall.
+Ships with **9 real NALCO site photos**, scraped from the official
+homepage carousel (nalcoindia.com) — not AI-generated: Port Terminal, Mine
+Access Road, Refinery View, Corporate HQ, Refinery Aerial, Ingot Warehouse,
+Power Plant, Mining Fleet, Wind Farm. (An earlier version of this app used
+13 AI-generated placeholder scenes; those were scrapped in favor of these
+authentic photos. Two other carousel banners — a mobile health camp and a
+CSR tailoring class — were excluded because they feature identifiable
+private individuals in a context unrelated to the booth.)
 
 Each scene's real photo is used two ways:
 - `web/public/scenes/{id}.jpg` — small (480px) thumbnail shown on the picker
@@ -153,8 +158,30 @@ both `scenes.ts` files, then redeploy both functions and hosting.
 - **PPE/safety-compliance auto-check on generated images** — open decision
   in plan §12, not implemented.
 
+## Image quality / resolution
+
+Backend uses `gemini-3-pro-image-preview` ("Nano Banana Pro") with
+`generationConfig.imageConfig.imageSize: "4K"` (set via `GEMINI_MODEL` /
+`GEMINI_IMAGE_SIZE` in `functions/.env`) — confirmed output around
+5400×3072px, several MB per photo. This is deliberately the Pro tier, not
+the cheaper `gemini-3.1-flash-image-preview` from the original plan: Flash
+tops out around 1300×768 regardless of prompt, which looked visibly soft
+full-screen on a tablet. The `@google/generative-ai` SDK doesn't yet type
+the `imageConfig` field, so `functions/src/gemini.ts` calls the REST API
+directly instead of going through the SDK.
+
+Trade-offs of the Pro/4K switch:
+- **Slower**: ~30–60s per generation (vs a few seconds for Flash) — the
+  Generating screen copy and the callable's timeouts (`functions/src/index.ts`,
+  `web/src/firebase.ts`) were both raised to accommodate this.
+- **Pricier**: roughly 2–3x Flash's per-image cost (see below).
+- Drop to `GEMINI_MODEL=gemini-3.1-flash-image-preview` in `functions/.env`
+  and redeploy functions if you'd rather trade quality back for speed/cost.
+
 ## Cost
 
-Same estimate as the plan (§10): ~$0.067/generation on
-`gemini-3.1-flash-image-preview`, budget WhatsApp/email/print/printer
-consumables separately once those phases start.
+The plan's original table (§10) assumed Flash at ~$0.067/generation. Running
+Nano Banana Pro at 4K costs more per image — budget roughly 2–3x that
+(check current pricing at ai.studio, since preview-model pricing can move).
+WhatsApp/email/print/printer consumables are still separate, budgeted once
+those phases start.

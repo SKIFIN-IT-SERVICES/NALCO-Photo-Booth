@@ -39,7 +39,9 @@ interface GeneratePhotoResponse {
  * back a signed URL the tablet (and later the QR "view" page) can use.
  */
 export const generatePhoto = onCall(
-  { timeoutSeconds: 60, memory: "512MiB" },
+  // 4K Nano Banana Pro generations are slower and heavier than the old
+  // Flash-tier ones, so this needs more time and memory than before.
+  { timeoutSeconds: 120, memory: "1GiB" },
   async (request): Promise<GeneratePhotoResponse> => {
     const data = request.data as GeneratePhotoRequest;
 

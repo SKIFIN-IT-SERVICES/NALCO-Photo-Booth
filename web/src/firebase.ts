@@ -40,9 +40,12 @@ export interface GeneratePhotoResponse {
   imageUrl: string;
   expiresAt: number;
 }
+// Longer than the SDK's 70s default — 4K Nano Banana Pro generations can
+// take a while, and the backend itself allows up to 120s.
 export const generatePhoto = httpsCallable<GeneratePhotoRequest, GeneratePhotoResponse>(
   functions,
-  "generatePhoto"
+  "generatePhoto",
+  { timeout: 140_000 }
 );
 
 export interface GetResultResponse {

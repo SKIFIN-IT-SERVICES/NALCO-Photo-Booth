@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Scene } from "./scenes";
@@ -16,21 +15,6 @@ const BASE_PROMPT =
   "slightly off-center, looking toward the camera with a natural, " +
   "confident expression.\n\n";
 
-let client: GoogleGenerativeAI | null = null;
-
-function getClient(): GoogleGenerativeAI {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY is not set. Add it to functions/.env (see .env.example)."
-    );
-  }
-  if (!client) {
-    client = new GoogleGenerativeAI(apiKey);
-  }
-  return client;
-}
-
 function loadReferenceImage(filename: string): { data: string; mimeType: string } {
   const path = join(__dirname, "..", "assets", "scenes", filename);
   const buffer = readFileSync(path);
@@ -42,32 +26,73 @@ export interface GeneratedImage {
   mimeType: string;
 }
 
+interface GeminiInlinePart {
+  inlineData?: { data: string; mimeType: string };
+  text?: string;
+}
+
+interface GeminiResponse {
+  candidates?: { content?: { parts?: GeminiInlinePart[] } }[];
+}
+
 export async function generateComposite(
   selfieBase64: string,
   selfieMimeType: string,
   scene: Scene
 ): Promise<GeneratedImage> {
-  const modelName = process.env.GEMINI_MODEL || "gemini-3.1-flash-image-preview";
-  const model = getClient().getGenerativeModel({ model: modelName });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY is not set. Add it to functions/.env (see .env.example)."
+    );
+  }
+
+  // Nano Banana Pro (gemini-3-pro-image-preview) is used instead of the
+  // cheaper Flash model specifically because it supports the imageConfig
+  // resolution control below — Flash tops out around 1300x768 regardless
+  // of prompt. The @google/generative-ai SDK doesn't yet type this field,
+  // so this calls the REST API directly.
+  const modelName = process.env.GEMINI_MODEL || "gemini-3-pro-image-preview";
+  const imageSize = process.env.GEMINI_IMAGE_SIZE || "4K";
 
   const reference = loadReferenceImage(scene.referenceImage);
   const prompt = BASE_PROMPT + "Scene-specific direction: " + scene.promptDetail;
 
-  const result = await model.generateContent([
-    { inlineData: { data: selfieBase64, mimeType: selfieMimeType } },
-    { inlineData: { data: reference.data, mimeType: reference.mimeType } },
-    { text: prompt },
-  ]);
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { inlineData: { data: selfieBase64, mimeType: selfieMimeType } },
+              { inlineData: { data: reference.data, mimeType: reference.mimeType } },
+              { text: prompt },
+            ],
+          },
+        ],
+        generationConfig: { imageConfig: { imageSize } },
+      }),
+    }
+  );
 
-  const parts = result.response.candidates?.[0]?.content?.parts ?? [];
-  const imagePart = parts.find((p) => "inlineData" in p && p.inlineData);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Gemini API error ${response.status}: ${body}`);
+  }
 
-  if (!imagePart || !("inlineData" in imagePart) || !imagePart.inlineData) {
+  const json = (await response.json()) as GeminiResponse;
+  const parts = json.candidates?.[0]?.content?.parts ?? [];
+  const imagePart = parts.find((p) => p.inlineData);
+
+  if (!imagePart?.inlineData) {
     throw new Error("Gemini did not return an image for this request.");
   }
 
   return {
     buffer: Buffer.from(imagePart.inlineData.data, "base64"),
-    mimeType: imagePart.inlineData.mimeType || "image/png",
+    mimeType: imagePart.inlineData.mimeType || "image/jpeg",
   };
 }
