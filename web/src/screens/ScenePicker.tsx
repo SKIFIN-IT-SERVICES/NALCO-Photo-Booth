@@ -39,7 +39,7 @@ export default function ScenePicker() {
       </button>
 
       {preview && (
-        <div className="fixed inset-0 z-40 flex flex-col bg-black/95">
+        <div className="screen-fade fixed inset-0 z-40 flex flex-col bg-black/95">
           <div className="flex flex-1 items-center justify-center overflow-hidden p-4">
             <img
               src={preview.thumbnail}

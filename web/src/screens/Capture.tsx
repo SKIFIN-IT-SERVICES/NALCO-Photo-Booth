@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useBooth } from "../state/BoothContext";
+import { FILTERS, getFilter } from "../data/filters";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
@@ -8,10 +9,12 @@ const ZOOM_STEP = 0.5;
 export default function Capture() {
   const { setSelfie, setError, goTo } = useBooth();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const thumbRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [filterId, setFilterId] = useState("none");
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +30,11 @@ export default function Capture() {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
+        // Each filter swatch gets its own tiny live preview of the same
+        // camera feed — a MediaStream can back multiple <video> elements.
+        Object.values(thumbRefs.current).forEach((el) => {
+          if (el) el.srcObject = stream;
+        });
       })
       .catch(() => {
         setError(
@@ -67,6 +75,10 @@ export default function Capture() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Bake the selected filter directly into the captured photo, same as
+    // the filter applied to the live preview below.
+    ctx.filter = getFilter(filterId).css;
+
     // Mirror horizontally so the captured photo matches what the visitor saw in the preview.
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
@@ -99,7 +111,11 @@ export default function Capture() {
         playsInline
         muted
         className="h-full w-full object-cover"
-        style={{ transform: `scaleX(-1) scale(${zoom})`, transition: "transform 150ms ease-out" }}
+        style={{
+          filter: getFilter(filterId).css,
+          transform: `scaleX(-1) scale(${zoom})`,
+          transition: "transform 150ms ease-out",
+        }}
       />
       <canvas ref={canvasRef} className="hidden" />
 
@@ -130,6 +146,36 @@ export default function Capture() {
         >
           −
         </button>
+      </div>
+
+      {/* Live filter picker — each swatch is its own tiny preview of the
+          same camera feed with that filter applied. Solid backdrop so
+          labels stay legible no matter what's behind them in the shot. */}
+      <div className="absolute bottom-32 flex w-full justify-center gap-3 overflow-x-auto bg-black/40 px-4 py-3 backdrop-blur-sm">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFilterId(f.id)}
+            className={`flex shrink-0 flex-col items-center gap-1 rounded-xl border-2 p-1 ${
+              filterId === f.id ? "border-nalco-orange" : "border-transparent"
+            }`}
+          >
+            <div className="h-14 w-14 overflow-hidden rounded-lg bg-black">
+              <video
+                ref={(el) => {
+                  thumbRefs.current[f.id] = el;
+                  if (el && streamRef.current) el.srcObject = streamRef.current;
+                }}
+                autoPlay
+                playsInline
+                muted
+                className="h-full w-full object-cover"
+                style={{ filter: f.css, transform: "scaleX(-1)" }}
+              />
+            </div>
+            <span className="text-[11px] text-white/80">{f.label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="absolute bottom-12 flex w-full justify-center gap-6">

@@ -19,7 +19,7 @@ export default function PhotoZoomViewer({
   const { scale, translate, reset, zoomIn, zoomOut, handlers } = useZoomPan();
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
+    <div className="screen-fade fixed inset-0 z-50 flex flex-col bg-black/95">
       <div className="flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <button onClick={onClose} className="rounded-full bg-white/15 px-6 py-3 text-white">
           Cancel

@@ -23,6 +23,31 @@ body {
 
 button {
   touch-action: manipulation;
+  /* Consistent tactile "press" feedback everywhere, without adding
+     active:scale classes to every single button in every screen. */
+  transition: transform 120ms ease, opacity 120ms ease, background-color 150ms ease,
+    border-color 150ms ease;
+}
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+button:disabled {
+  cursor: default;
+}
+
+/* Fade the whole screen in on every booth step change (Welcome -> Capture
+   -> ... -> Result), so moving between screens feels like a transition
+   rather than an abrupt cut. */
+@keyframes screen-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.screen-fade {
+  animation: screen-fade-in 220ms ease-out;
 }
 
 @media print {

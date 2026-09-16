@@ -15,14 +15,16 @@ function Booth() {
 
   return (
     <div className="h-screen w-screen overflow-hidden">
-      {step === "welcome" && <Welcome />}
-      {step === "capture" && <Capture />}
-      {step === "confirm" && <Confirm />}
-      {step === "scene" && <ScenePicker />}
-      {step === "format" && <FormatPicker />}
-      {step === "generating" && <Generating />}
-      {step === "result" && <Result />}
-      {step === "error" && <ErrorScreen />}
+      <div key={step} className="screen-fade h-full w-full">
+        {step === "welcome" && <Welcome />}
+        {step === "capture" && <Capture />}
+        {step === "confirm" && <Confirm />}
+        {step === "scene" && <ScenePicker />}
+        {step === "format" && <FormatPicker />}
+        {step === "generating" && <Generating />}
+        {step === "result" && <Result />}
+        {step === "error" && <ErrorScreen />}
+      </div>
     </div>
   );
 }

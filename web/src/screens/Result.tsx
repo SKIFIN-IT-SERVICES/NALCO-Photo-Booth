@@ -63,14 +63,14 @@ export default function Result() {
       {resultUrl && (
         <button
           onClick={() => setViewerOpen(true)}
-          className="absolute inset-0 flex items-center justify-center"
+          className="absolute inset-0"
           aria-label="Tap to zoom and apply filters"
         >
           <img
             id="printable-photo"
             src={resultUrl}
             alt="Your generated photo"
-            className="max-h-full max-w-full object-contain"
+            className="h-full w-full object-cover"
             style={{ filter: getFilter(filterId).css }}
           />
         </button>
@@ -90,7 +90,7 @@ export default function Result() {
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="screen-fade absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl bg-white shadow-2xl">
             <MenuItem
               label={downloading ? "Downloading…" : "Download Photo"}
               onClick={handleDownload}
@@ -117,7 +117,7 @@ export default function Result() {
       </div>
 
       {lowResForPrint && (
-        <p className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 max-w-xs -translate-x-1/2 text-center text-xs text-nalco-amber">
+        <p className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 max-w-xs -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-center text-xs text-nalco-amber backdrop-blur">
           Generated at Standard quality — may look soft printed at full
           page size. Pick 2K or 4K next time for sharper prints.
         </p>
@@ -125,7 +125,7 @@ export default function Result() {
 
       {qrModalOpen && (
         <div
-          className="fixed inset-0 z-30 flex items-center justify-center bg-black/70 p-8"
+          className="screen-fade fixed inset-0 z-30 flex items-center justify-center bg-black/70 p-8"
           onClick={() => setQrModalOpen(false)}
         >
           <div
