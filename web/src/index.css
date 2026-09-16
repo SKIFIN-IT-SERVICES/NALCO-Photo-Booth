@@ -15,6 +15,14 @@ body,
 body {
   background: #0b2545;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* Tuned for a tablet kiosk (iPad Pro-class screens) — no rubber-band
+     scroll, no double-tap zoom flash, no text-selection callouts on taps. */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  touch-action: manipulation;
 }
 
 @media print {

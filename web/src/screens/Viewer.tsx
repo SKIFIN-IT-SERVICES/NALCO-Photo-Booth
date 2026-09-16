@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getResult } from "../firebase";
 import { InstagramIcon, WhatsAppIcon, XIcon, FacebookIcon, ThreadsIcon } from "../components/SocialIcons";
+import PhotoZoomViewer from "../components/PhotoZoomViewer";
+import { bakeFilterToBlob } from "../lib/bakeFilter";
+import { getFilter } from "../data/filters";
 
 type ViewerState =
   | { status: "loading" }
@@ -23,6 +26,10 @@ export default function Viewer() {
   const [state, setState] = useState<ViewerState>({ status: "loading" });
   const [busy, setBusy] = useState<Platform | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [filterId, setFilterId] = useState("none");
+  const [bakedUrl, setBakedUrl] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const canShareFiles = typeof navigator !== "undefined" && "share" in navigator;
   const pageUrl = typeof window !== "undefined" ? window.location.href : "";
 
@@ -40,6 +47,31 @@ export default function Viewer() {
         })
       );
   }, [sessionId]);
+
+  // Re-bake a downloadable/shareable file whenever the chosen filter
+  // changes, so Save/Share reflect whatever was picked in the zoom viewer.
+  useEffect(() => {
+    if (state.status !== "ready") return;
+    if (filterId === "none") {
+      setBakedUrl(null);
+      return;
+    }
+    let cancelled = false;
+    bakeFilterToBlob(state.imageUrl, getFilter(filterId).css).then((blob) => {
+      if (cancelled) return;
+      const url = URL.createObjectURL(blob);
+      setBakedUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterId, state.status === "ready" ? state.imageUrl : null]);
+
+  const effectiveUrl = (state.status === "ready" && (bakedUrl ?? state.imageUrl)) || "";
 
   // Instagram and WhatsApp only accept the actual photo through the OS
   // share sheet — there's no web link either platform accepts an image
@@ -90,27 +122,48 @@ export default function Viewer() {
 
       {state.status === "ready" && (
         <>
-          <img
-            src={state.imageUrl}
-            alt="Your generated photo"
-            className="w-full max-w-sm rounded-2xl border-4 border-white/20 shadow-2xl"
-          />
-          <a
-            href={state.imageUrl}
-            download="nalco-photo-booth.jpg"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-full bg-nalco-orange px-10 py-4 text-lg font-semibold text-nalco-navy shadow-lg"
+          <button
+            onClick={() => setViewerOpen(true)}
+            aria-label="Tap to zoom and apply filters"
+            className="w-full max-w-sm"
           >
-            Save Photo
-          </a>
+            <img
+              src={effectiveUrl}
+              alt="Your generated photo"
+              className="w-full rounded-2xl border-4 border-white/20 shadow-2xl"
+            />
+          </button>
+          <p className="-mt-2 text-xs text-white/40">Tap the photo to zoom in or apply a filter</p>
+
+          <button
+            onClick={async () => {
+              setDownloading(true);
+              try {
+                const blob = await bakeFilterToBlob(state.imageUrl, getFilter(filterId).css);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "nalco-photo-booth.jpg";
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch {
+                window.open(state.imageUrl, "_blank", "noopener,noreferrer");
+              } finally {
+                setDownloading(false);
+              }
+            }}
+            disabled={downloading}
+            className="rounded-full bg-nalco-orange px-10 py-4 text-lg font-semibold text-nalco-navy shadow-lg disabled:opacity-50"
+          >
+            {downloading ? "Saving…" : "Save Photo"}
+          </button>
 
           <div>
             <p className="mb-3 text-sm text-white/60">Post it straight to:</p>
             <div className="flex flex-wrap justify-center gap-4">
               {canShareFiles && (
                 <button
-                  onClick={() => shareFile("instagram", state.imageUrl)}
+                  onClick={() => shareFile("instagram", effectiveUrl)}
                   disabled={busy !== null}
                   aria-label="Share to Instagram"
                   className="flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg disabled:opacity-50"
@@ -121,7 +174,7 @@ export default function Viewer() {
               )}
               {canShareFiles && (
                 <button
-                  onClick={() => shareFile("whatsapp", state.imageUrl)}
+                  onClick={() => shareFile("whatsapp", effectiveUrl)}
                   disabled={busy !== null}
                   aria-label="Share to WhatsApp"
                   className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg disabled:opacity-50"
@@ -180,6 +233,18 @@ export default function Viewer() {
           <p className="max-w-xs text-xs text-white/40">
             This link expires shortly for your privacy — save the photo now.
           </p>
+
+          {viewerOpen && (
+            <PhotoZoomViewer
+              imageUrl={state.imageUrl}
+              initialFilterId={filterId}
+              onApply={(id) => {
+                setFilterId(id);
+                setViewerOpen(false);
+              }}
+              onClose={() => setViewerOpen(false)}
+            />
+          )}
         </>
       )}
     </div>

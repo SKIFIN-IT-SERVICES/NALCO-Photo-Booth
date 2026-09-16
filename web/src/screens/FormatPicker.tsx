@@ -54,7 +54,7 @@ export default function FormatPicker() {
         </div>
       </div>
 
-      <div className="mt-auto flex gap-6 pt-2">
+      <div className="mt-auto flex gap-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
         <button
           onClick={() => goTo("scene")}
           className="rounded-full bg-white/20 px-10 py-4 text-lg text-white"
