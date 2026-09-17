@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useBooth } from "../state/BoothContext";
 import { checkOtpStatus, redeemOtp } from "../firebase";
+import { markUnlockedToday } from "../lib/otpUnlock";
 
 const CODE_LENGTH = 6;
 
@@ -33,6 +34,7 @@ export default function OtpGate() {
     setError(null);
     try {
       await redeemOtp({ code });
+      markUnlockedToday();
       goTo("welcome");
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message ?? "";

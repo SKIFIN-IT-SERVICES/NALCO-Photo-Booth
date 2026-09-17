@@ -79,17 +79,26 @@ Same file also holds `OTP_CODE` (see "Daily access code" below) —
 
 The booth is gated by a fixed code (`OTP_CODE` in `functions/.env`,
 default `123456` — **change this**) entered on a PIN-pad screen before
-Welcome. It's good for exactly **one redemption per calendar day** (India
-time): whoever enters it correctly unlocks one full photo session; after
-that, the booth shows "Booth Closed for Today" to everyone — including the
-same visitor — until it resets at midnight IST.
+Welcome. The code itself is good for exactly **one redemption per calendar
+day** (India time) — whoever enters it correctly first unlocks the booth;
+after that, anyone else who tries sees "Booth Closed for Today" until it
+resets at midnight IST.
 
-- Enforced server-side in `redeemOtp`
+- **The redeeming device stays unlocked for the rest of that day** —
+  refreshing the tablet or closing a session doesn't re-prompt for the
+  code or show "Closed" on that same device
+  ([web/src/lib/otpUnlock.ts](./web/src/lib/otpUnlock.ts) stamps
+  today's date in `localStorage` on success; `BoothContext`'s initial/reset
+  state checks it). This is purely a client-side convenience for the one
+  device actually running the kiosk — any *other* device is unaffected and
+  still can't redeem the same day's already-used code.
+- The redemption itself is enforced server-side in `redeemOtp`
   ([functions/src/index.ts](./functions/src/index.ts)) via a Firestore
-  transaction (collection `otpState`, one doc per date) — not just a
-  client-side check, so it can't be bypassed by refreshing the tablet or
-  opening a second tab. Verified with two separate browser sessions: the
-  second correctly showed "Booth Closed" after the first redeemed.
+  transaction (collection `otpState`, one doc per date), so a second
+  device can't succeed no matter what it does locally. Verified with two
+  separate browser sessions: the redeeming one persisted through a
+  refresh and stayed on Welcome; a completely separate session correctly
+  showed "Booth Closed."
 - `checkOtpStatus` lets the PIN screen show the locked state upfront
   without spending a guess.
 - To change the code for a given day, just edit `OTP_CODE` in
