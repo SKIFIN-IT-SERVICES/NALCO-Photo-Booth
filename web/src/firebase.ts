@@ -59,3 +59,17 @@ export const getResult = httpsCallable<{ sessionId: string }, GetResultResponse>
   functions,
   "getResult"
 );
+
+export interface UpdatePhotoRequest {
+  sessionId: string;
+  imageBase64: string;
+  mimeType: string;
+}
+export interface UpdatePhotoResponse {
+  imageUrl: string;
+}
+export const updatePhoto = httpsCallable<UpdatePhotoRequest, UpdatePhotoResponse>(
+  functions,
+  "updatePhoto",
+  { timeout: 40_000 }
+);

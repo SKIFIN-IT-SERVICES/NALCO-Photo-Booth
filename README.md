@@ -165,6 +165,32 @@ both `scenes.ts` files, then redeploy both functions and hosting.
 - **YouTube is intentionally not included** — it's video-only, there's no
   way to post a still photo to it from a link or share sheet.
 
+## Editing the generated photo
+
+Tapping the photo (or the **Edit Photo** button, tablet Result screen and
+the mobile QR "view" page both have it) opens a full editor
+([web/src/components/PhotoEditor.tsx](./web/src/components/PhotoEditor.tsx))
+with three tabs:
+
+- **Zoom** — pinch/drag pan+zoom to inspect detail (view-only, doesn't
+  change the saved photo).
+- **Crop** — drag-to-resize crop box with corner handles, plus Free/Square/
+  Portrait/Landscape aspect presets that lock the ratio while resizing. The
+  lock accounts for the source photo's own pixel dimensions (fraction-space
+  width/height aren't proportional to pixel width/height unless the photo
+  is already square), not just the on-screen box shape.
+- **Filters** — 10 presets (Original, B&W, Vintage, Vivid, Cool, Warm,
+  Noir, Fade, Dramatic, Soft) plus Brightness/Contrast/Saturation sliders,
+  combined into one CSS filter string.
+
+Hitting **Done** bakes the crop + filter into a real file via canvas
+(`ctx.filter` + a cropped `drawImage`), then calls the new `updatePhoto`
+Cloud Function, which **overwrites the session's stored photo** — a
+deliberately destructive save, like a phone editor's "Save" button. That
+means edits aren't just a local tablet preview: Download, Print, the QR
+"view" page, and social sharing all pick up the edited version from then
+on, since they all read from the same stored file / signed URL.
+
 ## Not built yet (see plan §12 "Open Decisions")
 
 - **WhatsApp Business API delivery** — currently the QR code opens a save

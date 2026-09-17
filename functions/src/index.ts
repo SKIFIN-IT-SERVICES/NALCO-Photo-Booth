@@ -180,6 +180,71 @@ export const getResult = onCall(
   }
 );
 
+interface UpdatePhotoRequest {
+  sessionId: string;
+  imageBase64: string;
+  mimeType: string;
+}
+
+interface UpdatePhotoResponse {
+  imageUrl: string;
+}
+
+const MAX_EDITED_PHOTO_BYTES = 20 * 1024 * 1024; // 20MB — 4K edits can be several MB
+
+/**
+ * Called after the visitor edits their photo (crop/filters) in the zoom
+ * viewer. Overwrites the session's stored result with the edited version —
+ * deliberately destructive (like a phone photo editor's "save"), so
+ * Download/Print/the QR "view" page all serve the edited photo from here
+ * on, not just the tablet's local preview.
+ */
+export const updatePhoto = onCall(
+  { timeoutSeconds: 30, memory: "512MiB" },
+  async (request): Promise<UpdatePhotoResponse> => {
+    const data = request.data as UpdatePhotoRequest;
+
+    if (!data?.sessionId || !data?.imageBase64 || !data?.mimeType) {
+      throw new HttpsError(
+        "invalid-argument",
+        "sessionId, imageBase64 and mimeType are required."
+      );
+    }
+    if (!/^image\/(jpeg|png|webp)$/.test(data.mimeType)) {
+      throw new HttpsError("invalid-argument", "Image must be JPEG, PNG or WebP.");
+    }
+    const approxBytes = (data.imageBase64.length * 3) / 4;
+    if (approxBytes > MAX_EDITED_PHOTO_BYTES) {
+      throw new HttpsError("invalid-argument", "Edited image is too large.");
+    }
+
+    const docRef = db.collection("sessions").doc(data.sessionId);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      throw new HttpsError("not-found", "This session has expired or does not exist.");
+    }
+
+    const { resultPath, expiresAt } = doc.data() as { resultPath: string; expiresAt: Timestamp };
+    if (expiresAt.toMillis() < Date.now()) {
+      throw new HttpsError("not-found", "This session has expired.");
+    }
+
+    const file = bucket.file(resultPath);
+    await file.save(Buffer.from(data.imageBase64, "base64"), {
+      contentType: data.mimeType,
+      metadata: { cacheControl: "private, max-age=0, no-cache" },
+    });
+    await docRef.update({ contentType: data.mimeType, editedAt: Timestamp.now() });
+
+    const [signedUrl] = await file.getSignedUrl({
+      action: "read",
+      expires: Date.now() + SIGNED_URL_TTL_MS,
+    });
+
+    return { imageUrl: signedUrl };
+  }
+);
+
 /**
  * Hourly sweep: deletes expired session images/docs so no visitor selfie or
  * composite outlives its stated retention window (privacy requirement).

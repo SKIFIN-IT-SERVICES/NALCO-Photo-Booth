@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { useBooth } from "../state/BoothContext";
-import PhotoZoomViewer from "../components/PhotoZoomViewer";
-import { bakeFilterToBlob } from "../lib/bakeFilter";
-import { getFilter } from "../data/filters";
+import PhotoEditor from "../components/PhotoEditor";
 
 export default function Result() {
-  const { sessionId, resultUrl, quality, reset } = useBooth();
+  const { sessionId, resultUrl, quality, setResult, reset } = useBooth();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [filterId, setFilterId] = useState("none");
+  const [editorOpen, setEditorOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const lowResForPrint = quality === "standard";
@@ -38,7 +35,8 @@ export default function Result() {
     setMenuOpen(false);
     setDownloading(true);
     try {
-      const blob = await bakeFilterToBlob(resultUrl, getFilter(filterId).css);
+      const res = await fetch(resultUrl);
+      const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
@@ -46,7 +44,6 @@ export default function Result() {
       a.click();
       URL.revokeObjectURL(blobUrl);
     } catch {
-      // Fall back to opening the original if baking/downloading fails.
       window.open(resultUrl, "_blank", "noopener,noreferrer");
     } finally {
       setDownloading(false);
@@ -62,17 +59,25 @@ export default function Result() {
     <div className="relative flex h-full w-full items-center justify-center bg-black">
       {resultUrl && (
         <button
-          onClick={() => setViewerOpen(true)}
+          onClick={() => setEditorOpen(true)}
           className="absolute inset-0"
-          aria-label="Tap to zoom and apply filters"
+          aria-label="Tap to edit — zoom, crop, and filters"
         >
           <img
             id="printable-photo"
             src={resultUrl}
             alt="Your generated photo"
             className="h-full w-full object-cover"
-            style={{ filter: getFilter(filterId).css }}
           />
+        </button>
+      )}
+
+      {resultUrl && (
+        <button
+          onClick={() => setEditorOpen(true)}
+          className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-4 rounded-full bg-white/15 px-6 py-3 text-sm font-medium text-white backdrop-blur"
+        >
+          Edit Photo
         </button>
       )}
 
@@ -146,15 +151,13 @@ export default function Result() {
         </div>
       )}
 
-      {viewerOpen && resultUrl && (
-        <PhotoZoomViewer
+      {editorOpen && resultUrl && sessionId && (
+        <PhotoEditor
+          sessionId={sessionId}
           imageUrl={resultUrl}
-          initialFilterId={filterId}
-          onApply={(id) => {
-            setFilterId(id);
-            setViewerOpen(false);
-          }}
-          onClose={() => setViewerOpen(false)}
+          initialFilterId="none"
+          onSaved={(newUrl) => setResult(sessionId, newUrl)}
+          onClose={() => setEditorOpen(false)}
         />
       )}
     </div>
