@@ -22,6 +22,73 @@ const MAX_SELFIE_BYTES = 8 * 1024 * 1024; // 8MB
 const SESSION_TTL_HOURS = Number(process.env.SESSION_TTL_HOURS || 2);
 const SIGNED_URL_TTL_MS = 60 * 60 * 1000; // 1 hour, refreshed via getResult
 
+// Calendar day in India time, since that's where the booth actually runs —
+// using UTC would flip the "day" over mid-afternoon IST, which would be a
+// confusing time for the daily code to reset.
+function todayIST(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }); // YYYY-MM-DD
+}
+
+interface OtpStatusResponse {
+  usedToday: boolean;
+}
+
+/**
+ * Lets the Welcome/OTP screen check up front whether today's code has
+ * already been redeemed, without spending an attempt to find out.
+ */
+export const checkOtpStatus = onCall({ timeoutSeconds: 15 }, async (): Promise<OtpStatusResponse> => {
+  const doc = await db.collection("otpState").doc(todayIST()).get();
+  return { usedToday: doc.exists && doc.data()?.used === true };
+});
+
+interface RedeemOtpResponse {
+  ok: true;
+}
+
+/**
+ * One fixed code (OTP_CODE in functions/.env), good for exactly one
+ * redemption per calendar day — whoever enters it first unlocks the booth
+ * for one session; everyone else is locked out until the next day. This is
+ * an operational access gate for a staffed kiosk, not a cryptographic
+ * boundary: generatePhoto itself isn't otherwise authenticated.
+ */
+export const redeemOtp = onCall(
+  { timeoutSeconds: 15 },
+  async (request): Promise<RedeemOtpResponse> => {
+    const code = (request.data as { code?: string })?.code;
+    if (!code) {
+      throw new HttpsError("invalid-argument", "code is required.");
+    }
+
+    const expected = process.env.OTP_CODE;
+    if (!expected) {
+      throw new HttpsError(
+        "failed-precondition",
+        "OTP_CODE is not configured. Add it to functions/.env (see .env.example)."
+      );
+    }
+
+    if (code !== expected) {
+      throw new HttpsError("invalid-argument", "Incorrect code.");
+    }
+
+    const docRef = db.collection("otpState").doc(todayIST());
+
+    // Transaction so two near-simultaneous redemptions can't both succeed —
+    // whichever commits first wins, the other reads used=true and rejects.
+    await db.runTransaction(async (tx) => {
+      const doc = await tx.get(docRef);
+      if (doc.exists && doc.data()?.used === true) {
+        throw new HttpsError("already-exists", "Today's code has already been used.");
+      }
+      tx.set(docRef, { used: true, usedAt: Timestamp.now() });
+    });
+
+    return { ok: true };
+  }
+);
+
 interface GeneratePhotoRequest {
   selfieBase64: string;
   mimeType: string;

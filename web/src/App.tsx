@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BoothProvider, useBooth } from "./state/BoothContext";
+import OtpGate from "./screens/OtpGate";
 import Welcome from "./screens/Welcome";
 import Capture from "./screens/Capture";
 import Confirm from "./screens/Confirm";
@@ -16,6 +17,7 @@ function Booth() {
   return (
     <div className="h-screen w-screen overflow-hidden">
       <div key={step} className="screen-fade h-full w-full">
+        {step === "otp" && <OtpGate />}
         {step === "welcome" && <Welcome />}
         {step === "capture" && <Capture />}
         {step === "confirm" && <Confirm />}

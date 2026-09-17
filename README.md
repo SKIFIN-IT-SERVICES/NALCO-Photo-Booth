@@ -3,11 +3,12 @@
 **Live:** https://nalco-photo-booth.web.app
 
 Standalone tablet app implementing [ai-photo-booth-tablet-plan.md](./ai-photo-booth-tablet-plan.md).
-This is **v1 scope**: capture → pick one of 9 real NALCO site scenes →
-pick a format (aspect ratio + quality tier) → Gemini composite → result
-screen with a QR code that opens a mobile "save your photo" page.
-WhatsApp/email delivery are intentionally deferred (see "Not built yet"
-below) — nothing about the plan is lost, just sequenced.
+This is **v1 scope**: enter today's access code → capture → pick one of 9
+real NALCO site scenes → pick a format (aspect ratio + quality tier) →
+Gemini composite → result screen (with editing, and a QR code that opens a
+mobile "save your photo" page). WhatsApp/email delivery are intentionally
+deferred (see "Not built yet" below) — nothing about the plan is lost,
+just sequenced.
 
 ## Why this doesn't touch your existing Firebase project
 
@@ -71,6 +72,32 @@ cp functions/.env.example functions/.env
 
 `functions/.env` is gitignored and auto-loaded by Firebase Functions v2 at
 both emulate-time and deploy-time — no separate secret-manager step needed.
+Same file also holds `OTP_CODE` (see "Daily access code" below) —
+`functions/.env.example` documents every variable this app reads.
+
+## Daily access code
+
+The booth is gated by a fixed code (`OTP_CODE` in `functions/.env`,
+default `123456` — **change this**) entered on a PIN-pad screen before
+Welcome. It's good for exactly **one redemption per calendar day** (India
+time): whoever enters it correctly unlocks one full photo session; after
+that, the booth shows "Booth Closed for Today" to everyone — including the
+same visitor — until it resets at midnight IST.
+
+- Enforced server-side in `redeemOtp`
+  ([functions/src/index.ts](./functions/src/index.ts)) via a Firestore
+  transaction (collection `otpState`, one doc per date) — not just a
+  client-side check, so it can't be bypassed by refreshing the tablet or
+  opening a second tab. Verified with two separate browser sessions: the
+  second correctly showed "Booth Closed" after the first redeemed.
+- `checkOtpStatus` lets the PIN screen show the locked state upfront
+  without spending a guess.
+- To change the code for a given day, just edit `OTP_CODE` in
+  `functions/.env` and redeploy functions (`cd functions && npm run
+  deploy`) — it doesn't rotate itself; that's a manual step for staff.
+- This is an operational access gate for a staffed kiosk, not a
+  cryptographic boundary — `generatePhoto` itself still isn't otherwise
+  authenticated.
 
 ## Run locally
 

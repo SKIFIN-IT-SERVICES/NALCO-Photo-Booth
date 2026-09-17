@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 import type { AspectRatioId, QualityId } from "../data/format";
 
 export type BoothStep =
+  | "otp"
   | "welcome"
   | "capture"
   | "confirm"
@@ -33,7 +34,7 @@ interface BoothContextValue extends BoothState {
 }
 
 const initialState: BoothState = {
-  step: "welcome",
+  step: "otp",
   selfieDataUrl: null,
   sceneId: null,
   aspectRatio: null,

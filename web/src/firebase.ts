@@ -73,3 +73,10 @@ export const updatePhoto = httpsCallable<UpdatePhotoRequest, UpdatePhotoResponse
   "updatePhoto",
   { timeout: 40_000 }
 );
+
+export interface OtpStatusResponse {
+  usedToday: boolean;
+}
+export const checkOtpStatus = httpsCallable<void, OtpStatusResponse>(functions, "checkOtpStatus");
+
+export const redeemOtp = httpsCallable<{ code: string }, { ok: true }>(functions, "redeemOtp");
