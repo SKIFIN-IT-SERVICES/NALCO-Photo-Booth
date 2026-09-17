@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AspectRatioId, QualityId } from "../data/format";
 import { isUnlockedToday } from "../lib/otpUnlock";
+import { saveFlow, clearFlow, loadFlow } from "../lib/sessionPersist";
 
 export type BoothStep =
   | "otp"
@@ -35,10 +36,13 @@ interface BoothContextValue extends BoothState {
 }
 
 // This device already redeemed today's code -> skip straight past the OTP
-// gate; otherwise it starts there. Checked fresh each time (not just once)
-// so a day rollover while the app stays open is handled correctly too.
+// gate; otherwise it starts there. Then, if there's saved in-progress flow
+// from before a refresh, restore it on top — so an accidental reload
+// doesn't dump the visitor back to square one. Checked fresh each call
+// (not memoized once) so a day rollover while the app stays open, or a
+// Close Session clearing the saved flow, are both picked up correctly.
 function freshState(): BoothState {
-  return {
+  const base: BoothState = {
     step: isUnlockedToday() ? "welcome" : "otp",
     selfieDataUrl: null,
     sceneId: null,
@@ -48,12 +52,48 @@ function freshState(): BoothState {
     resultUrl: null,
     errorMessage: null,
   };
+
+  if (base.step === "otp") return base;
+
+  const saved = loadFlow();
+  if (!saved) return base;
+
+  return {
+    ...base,
+    step: saved.step,
+    selfieDataUrl: saved.selfieDataUrl,
+    sceneId: saved.sceneId,
+    aspectRatio: saved.aspectRatio,
+    quality: saved.quality,
+    sessionId: saved.sessionId,
+    resultUrl: saved.resultUrl,
+  };
 }
 
 const BoothContext = createContext<BoothContextValue | null>(null);
 
 export function BoothProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BoothState>(freshState);
+
+  // Persist on every change so a refresh can restore where the visitor
+  // left off — skipped for "otp" (nothing worth resuming pre-auth) and
+  // "error" (resuming an error state isn't useful; freshState already
+  // falls that back to "welcome" on load).
+  useEffect(() => {
+    if (state.step === "otp" || state.step === "error") {
+      clearFlow();
+      return;
+    }
+    saveFlow({
+      step: state.step,
+      selfieDataUrl: state.selfieDataUrl,
+      sceneId: state.sceneId,
+      aspectRatio: state.aspectRatio,
+      quality: state.quality,
+      sessionId: state.sessionId,
+      resultUrl: state.resultUrl,
+    });
+  }, [state]);
 
   const value = useMemo<BoothContextValue>(
     () => ({
@@ -66,7 +106,10 @@ export function BoothProvider({ children }: { children: ReactNode }) {
       setResult: (sessionId, resultUrl) =>
         setState((s) => ({ ...s, sessionId, resultUrl, step: "result" })),
       setError: (errorMessage) => setState((s) => ({ ...s, errorMessage, step: "error" })),
-      reset: () => setState(freshState()),
+      reset: () => {
+        clearFlow();
+        setState(freshState());
+      },
     }),
     [state]
   );
