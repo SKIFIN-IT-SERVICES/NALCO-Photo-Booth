@@ -3,20 +3,38 @@ import { join } from "node:path";
 import type { Scene } from "./scenes";
 import { resolveAspectRatio, resolveQuality, type AspectRatioId, type QualityId } from "./format";
 
+// Identity fidelity is the single most important quality bar here — a
+// visitor will immediately reject a photo that doesn't look like them.
+// The wording below ("pixel-accurate", "copy, not inspiration", an
+// explicit feature-by-feature list) is deliberately blunt: a softer
+// "preserve their identity" framing measurably drifted the face (fuller
+// beard, different hairstyle, rounder jaw) in side-by-side testing against
+// this exact stronger version, which held the hairstyle/beard/face shape
+// much closer to the source photo. Keep this framing if you touch the
+// prompt again — verify any change against a real before/after, not just
+// intuition, since small wording changes here have an outsized effect.
 const BASE_PROMPT =
-  "You are given two images. The first is a photo of a person. The second " +
-  "is a real photo of an industrial mining/refinery site. Composite the " +
-  "person from the first image naturally into the scene from the second " +
-  "image. Preserve their facial identity and features exactly — do not " +
-  "alter their face. Keep the second image's background, equipment, " +
-  "signage and lighting exactly as shown; do not invent a different " +
-  "location. Match the lighting, shadows, grain, and color grading of the " +
-  "second image so the result looks like a single real photograph taken " +
-  "on-site, not a cutout or collage. Reframe the composition to fill the " +
-  "requested aspect ratio naturally (e.g. show more of the scene for a " +
-  "wide frame, a tighter crop for a tall one) rather than adding blank " +
-  "space or letterboxing. Subject slightly off-center, looking toward the " +
-  "camera with a natural, confident expression.\n\n";
+  "Edit the second image (a real industrial mining/refinery site photo) by " +
+  "inserting the exact person from the first image into it. This is a " +
+  "strict face-identity task, not a reimagining: the output face must be " +
+  "pixel-accurate to the first image — same face shape, same eyes, " +
+  "eyebrows and eye spacing, same nose shape, same mouth and lip shape, " +
+  "same jawline and chin, same skin tone and texture, same facial hair " +
+  "(exact style and length), same hairstyle and hairline. Do not beautify, " +
+  "restyle, idealize, or regenerate the face. Do not blend it with a " +
+  "different face. Treat the first image's face as a fixed reference to " +
+  "copy, not inspiration.\n\n" +
+  "Everything else about the person (clothing, pose, body) may adapt " +
+  "naturally to fit the scene and the direction below. Keep the second " +
+  "image's background, equipment, signage and lighting exactly as shown; " +
+  "do not invent a different location. Match the lighting, shadows, grain, " +
+  "and color grading of the second image so the result looks like a " +
+  "single real photograph taken on-site, not a cutout or collage. Reframe " +
+  "the composition to fill the requested aspect ratio naturally (e.g. show " +
+  "more of the scene for a wide frame, a tighter crop for a tall one) " +
+  "rather than adding blank space or letterboxing. Subject slightly " +
+  "off-center, looking toward the camera with a natural, confident " +
+  "expression.\n\n";
 
 function loadReferenceImage(filename: string): { data: string; mimeType: string } {
   const path = join(__dirname, "..", "assets", "scenes", filename);
