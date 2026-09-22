@@ -3,8 +3,15 @@ import { useBooth } from "../state/BoothContext";
 import { FILTERS, getFilter } from "../data/filters";
 
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 3;
-const ZOOM_STEP = 0.5;
+// Capped conservatively (was 3) after a real quality bug: zooming crops a
+// smaller region of an already-modest camera frame then stretches it back
+// up, and at high zoom this can crop out the eyes/forehead entirely —
+// verified directly against Gemini that a crop missing those features
+// forces it to invent that part of the face, producing a visibly
+// different person. 1.8x still lets someone tighten framing without
+// enough crop to lose key features at typical kiosk selfie distance.
+const MAX_ZOOM = 1.8;
+const ZOOM_STEP = 0.2;
 
 export default function Capture() {
   const { setSelfie, setError, goTo } = useBooth();
@@ -20,7 +27,14 @@ export default function Capture() {
     let cancelled = false;
 
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "user", width: 1280, height: 960 }, audio: false })
+      // `ideal` (not exact) so this gracefully degrades on lower-end
+      // hardware instead of failing — but asks for meaningfully more than
+      // the old fixed 1280x960, since that capped the raw detail available
+      // for Gemini's identity-critical compositing even before any zoom.
+      .getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1440 } },
+        audio: false,
+      })
       .then((stream) => {
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
@@ -91,7 +105,7 @@ export default function Capture() {
     const cropY = (video.videoHeight - cropH) / 2;
     ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
 
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
     setSelfie(dataUrl);
   }
 
