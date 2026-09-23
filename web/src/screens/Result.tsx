@@ -4,10 +4,11 @@ import { useBooth } from "../state/BoothContext";
 import PhotoEditor from "../components/PhotoEditor";
 
 export default function Result() {
-  const { sessionId, resultUrl, quality, setResult, reset } = useBooth();
+  const { sessionId, resultUrl, selfieDataUrl, quality, setResult, reset } = useBooth();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -102,6 +103,15 @@ export default function Result() {
               disabled={downloading}
             />
             <MenuItem label="Print Photo" onClick={handlePrint} />
+            {selfieDataUrl && (
+              <MenuItem
+                label="Compare with Original"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setCompareOpen(true);
+                }}
+              />
+            )}
             <MenuItem
               label="Show QR Code"
               onClick={() => {
@@ -151,6 +161,27 @@ export default function Result() {
         </div>
       )}
 
+      {compareOpen && selfieDataUrl && resultUrl && (
+        <div
+          className="screen-fade fixed inset-0 z-30 flex flex-col bg-black/95 p-4"
+          onClick={() => setCompareOpen(false)}
+        >
+          <div
+            className="grid h-[70vh] grid-cols-1 gap-6 overflow-y-auto sm:grid-cols-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ComparePane label="Original (as captured)" imageUrl={selfieDataUrl} />
+            <ComparePane label="Generated" imageUrl={resultUrl} />
+          </div>
+          <button
+            onClick={() => setCompareOpen(false)}
+            className="mx-auto mt-4 rounded-full bg-white/15 px-8 py-3 text-white"
+          >
+            Close
+          </button>
+        </div>
+      )}
+
       {editorOpen && resultUrl && sessionId && (
         <PhotoEditor
           sessionId={sessionId}
@@ -160,6 +191,20 @@ export default function Result() {
           onClose={() => setEditorOpen(false)}
         />
       )}
+    </div>
+  );
+}
+
+function ComparePane({ label, imageUrl }: { label: string; imageUrl: string }) {
+  return (
+    <div className="flex h-full min-h-0 flex-col items-center gap-2">
+      <p className="text-sm font-medium text-white/70">{label}</p>
+      {/* Grid row above has an explicit fixed height (not flex-stretch),
+          which both panes inherit via h-full — a flex-1 chain here left
+          the low-res original visibly smaller than the generated photo,
+          since percentage/stretch heights don't reliably propagate
+          through nested flex items with differing intrinsic content. */}
+      <img src={imageUrl} alt={label} className="h-full min-h-0 w-full rounded-xl object-contain" />
     </div>
   );
 }
